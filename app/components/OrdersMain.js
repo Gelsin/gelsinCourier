@@ -1,6 +1,6 @@
 import React, {Component} from 'react';
 import {AsyncStorage, Alert} from 'react-native';
-import {Container, Content, Text,  Icon, Item} from 'native-base';
+import {Container, Content, Text,  Icon, Item, Header, Button, Left, Body, Right, Title} from 'native-base';
 import OrderItem from './common/OrderItem';
 import {Actions} from 'react-native-router-flux';
 
@@ -8,7 +8,7 @@ export default class OrdersMain extends Component {
     constructor(props) {
         console.log("in constructor");
         super(props);
-        this.state = { error: '', loading: false, token: '', orders: []};
+        this.state = { error: '', loading: false, token: '', orders: [], message: ''};
         console.log(this.state);
 
     };
@@ -46,6 +46,11 @@ export default class OrdersMain extends Component {
                 if (responseJson.orders.length > 0) {
                     this.setState({
                         orders: responseJson.orders.reverse()
+                    });
+                }
+                else {
+                    this.setState({
+                        message: "You have no pending orders"
                     });
                 }
                 console.log(this.state);
@@ -96,8 +101,42 @@ export default class OrdersMain extends Component {
         // .done();
     }
 
+    logout = async () => {
+        console.log('logout');
+
+        fetch('http://gelsin.az/app/auth/invalidate', {
+            method: 'DELETE',
+            headers: {
+                'Authorization': 'Bearer ' + this.state.token,
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            }
+        })
+            .then((response) => console.log(response)
+                // .then((responseData) => {
+                //     console.log("inside responsejson");
+                //     console.log('response object:', responseData);
+                //
+                // })
+                // .catch((error) => {
+                //     console.log(error);
+                // })
+            )
+            .catch((error) => {
+                console.log(error);
+            });
+
+        try {
+            await AsyncStorage.removeItem('@Gelsin:auth_user');
+            Actions.signIn();
+        } catch (error) {
+            this.setState({error: error.message});
+        }
+    };
+
+
     renderMessage () {
-        if (this.props.message) {
+        if (this.state.message != '') {
             return (
             <Item style={{backgroundColor: '#e5ddcb', margin: 0, height: 48, padding: 12 }}>
                 <Icon style={{color: '#524656'}} name="ios-checkmark-outline" />
@@ -123,19 +162,23 @@ export default class OrdersMain extends Component {
 
         return (
             <Container>
-                {/*<Header style={styles.header}>*/}
-                    {/*<Left style={{ flex: 1}}>*/}
-                        {/*<Button transparent onPress={()=>Actions.category()}>*/}
-                            {/*<Icon style={{color: '#e5ddcb'}} name='ios-arrow-round-back'/>*/}
-                        {/*</Button>*/}
-                    {/*</Left>*/}
+                <Header style={styles.header}>
+                    <Left style={{ flex: 2}}>
+                        <Button transparent onPress={()=>this.getOrders(this.state.token)}>
+                            <Icon style={{color: '#e5ddcb'}} name='md-refresh'/>
+                        </Button>
+                    </Left>
 
-                    {/*<Body style={{ flex: 7}}>*/}
-                    {/*<Title style={{alignSelf: 'center', color: '#e5ddcb'}}>Orders</Title>*/}
-                    {/*</Body>*/}
+                    <Body style={{ flex: 7}}>
+                    <Title style={{alignSelf: 'center', color: '#e5ddcb'}}>Orders</Title>
+                    </Body>
 
-                    {/*<Right style={{ flex: 1}}/>*/}
-                {/*</Header>*/}
+                    <Right style={{ flex: 2, }}>
+                        <Button transparent onPress={()=>this.logout()}>
+                            <Icon style={{color: '#e5ddcb'}} name='md-log-out'/>
+                        </Button>
+                    </Right>
+                </Header>
 
                 <Content >
                     {this.renderMessage()}
